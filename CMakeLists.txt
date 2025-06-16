@@ -14,5 +14,11 @@ add_subdirectory(shared-lib)
 # Executable
 add_executable(opencv_demo src/main.cpp)
 
+# Add include directories for thread_pool and image_processor
+target_include_directories(opencv_demo PRIVATE
+    ${CMAKE_SOURCE_DIR}/shared-lib/thread_pool
+    ${CMAKE_SOURCE_DIR}/shared-lib/image_processor
+)
+
 # Link executable to shared library
-target_link_libraries(opencv_demo PRIVATE image_processor)
+target_link_libraries(opencv_demo PRIVATE image_processor thread_pool)

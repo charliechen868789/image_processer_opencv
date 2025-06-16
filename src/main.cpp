@@ -1,6 +1,8 @@
 #include "edge_detection.hpp"
+#include "thread_pool.hpp"
 #include <opencv2/highgui.hpp>
 #include <iostream>
+#include <future>
 
 using namespace image_process;
 
@@ -10,12 +12,25 @@ int main(int argc, char** argv) {
     cv::Mat img = cv::imread(argv[1]);
     if (img.empty()) return 1;
 
-    EdgeDetection edge(EdgeDetection::SOBEL);
-    cv::Mat output;
-    edge.process(img, output);
+    ThreadPool pool(std::thread::hardware_concurrency());
 
-    cv::imshow(edge.name(), output);
+    // Enqueue the edge detection task
+    auto future = pool.enqueue([&img]() -> cv::Mat {
+        EdgeDetection edge(EdgeDetection::SOBEL);
+        cv::Mat output;
+        edge.process(img, output);
+        return output;  // Return processed image
+    });
+
+    // Wait for the task to finish and get the result
+    cv::Mat result = future.get();
+
+    // Show the result in main thread (GUI stuff should be in main thread)
+    EdgeDetection edge(EdgeDetection::SOBEL);
+    cv::imshow(edge.name(), result);
     cv::waitKey(0);
+
+    pool.shutdown();
 
     return 0;
 }
