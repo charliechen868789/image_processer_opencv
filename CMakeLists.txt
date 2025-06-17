@@ -16,8 +16,7 @@ add_executable(opencv_demo src/main.cpp)
 
 # Add include directories for thread_pool and image_processor
 target_include_directories(opencv_demo PRIVATE
-    ${CMAKE_SOURCE_DIR}/shared-lib/thread_pool
-    ${CMAKE_SOURCE_DIR}/shared-lib/image_processor
+    ${CMAKE_SOURCE_DIR}/shared-lib
 )
 
 # Link executable to shared library
