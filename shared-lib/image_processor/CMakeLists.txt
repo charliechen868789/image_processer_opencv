@@ -2,6 +2,8 @@
 
 add_library(image_processor SHARED
     edge_detection.cpp
+    color_transfer.cpp
+    contrast_enhancer.cpp
 )
 
 target_include_directories(image_processor PUBLIC

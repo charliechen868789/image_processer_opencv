@@ -12,6 +12,8 @@
 #include <atomic>
 #include <future>
 #include "image_processor/edge_detection.hpp"
+#include "image_processor/color_transfer.hpp"
+#include "image_processor/contrast_enhancer.hpp"
 #include "thread_pool/thread_pool.hpp"
 #include <unordered_set>
 
@@ -90,6 +92,20 @@ void runEdgeDetection(EdgeDetection::Method method, const Mat& input, int instan
     });
 }
 
+void runColorTransfer(const Mat& styleImage, const Mat& targetImage, int instanceId) {
+    image_process::ColorTransfer ct(styleImage, targetImage);
+    Mat result = ct.applyTransfer();
+    string windowName = "Color Transfer Result " + std::to_string(instanceId);
+
+    enqueueGuiTask([result, windowName]() {
+        imshow(windowName, result);
+        {
+            std::lock_guard<std::mutex> lock(openWindowsMutex);
+            openWindows.insert(windowName);
+        }
+        cout << windowName << " displayed. Press any key on that window to close it.\n";
+    });
+}
 
 
 
@@ -113,8 +129,9 @@ int main(int argc, char** argv) {
     while (true) {
         cout << "\n=== Main Menu ===\n";
         cout << "1. Edge Detection Methods\n";
-        cout << "2. Other Processing (not implemented)\n";
-        cout << "3. Exit\n";
+        cout << "2. Color Transfer\n";
+        cout << "3. Other Processing (not implemented)\n";
+        cout << "4. Exit\n";
         cout << "Choose option: ";
 
         int mainChoice;
@@ -127,7 +144,7 @@ int main(int argc, char** argv) {
             continue;
         }
 
-        if (mainChoice == 3) break;
+        if (mainChoice == 4) break;
 
         switch (mainChoice) {
             case 1: {
@@ -169,6 +186,23 @@ int main(int argc, char** argv) {
                 break;
             }
             case 2:
+            {
+                // Request style image path
+                cout << "Enter path for style image: ";
+                string stylePath;
+                cin >> stylePath;
+                Mat styleImg = imread(stylePath);
+                if (styleImg.empty()) {
+                    cout << "Error loading style image.\n";
+                    break;
+                }
+
+                // Use the loaded main image as targetImage (already loaded as 'image')
+                pool.enqueue(runColorTransfer, styleImg, image.clone(), taskCount++);
+                cout << "Color transfer task enqueued.\n";
+                break;
+            }
+            case 3:
                 cout << "Other processing is not implemented yet.\n";
                 break;
             default:
