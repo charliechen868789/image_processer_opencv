@@ -20,4 +20,8 @@ target_include_directories(opencv_demo PRIVATE
 )
 
 # Link executable to shared library
-target_link_libraries(opencv_demo PRIVATE image_processor thread_pool)
+target_link_libraries(opencv_demo PRIVATE 
+    image_processor
+    thread_pool
+    qrcode_finder
+)

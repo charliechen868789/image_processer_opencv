@@ -14,12 +14,14 @@
 #include "image_processor/edge_detection.hpp"
 #include "image_processor/color_transfer.hpp"
 #include "image_processor/contrast_enhancer.hpp"
+#include "qrcode_finder/qrcode_finder.hpp"
 #include "thread_pool/thread_pool.hpp"
 #include <unordered_set>
 
 using namespace std;
 using namespace cv;
 using namespace image_process;
+using namespace qrcode_finder;
 
 // GUI task queue
 std::queue<std::function<void()>> guiTasks;
@@ -130,8 +132,9 @@ int main(int argc, char** argv) {
         cout << "\n=== Main Menu ===\n";
         cout << "1. Edge Detection Methods\n";
         cout << "2. Color Transfer\n";
-        cout << "3. Other Processing (not implemented)\n";
-        cout << "4. Exit\n";
+        cout << "3. QR code\n";
+        cout << "4. Other Processing (not implemented)\n";
+        cout << "5. Exit\n";
         cout << "Choose option: ";
 
         int mainChoice;
@@ -144,7 +147,7 @@ int main(int argc, char** argv) {
             continue;
         }
 
-        if (mainChoice == 4) break;
+        if (mainChoice == 5) break;
 
         switch (mainChoice) {
             case 1: {
@@ -202,7 +205,43 @@ int main(int argc, char** argv) {
                 cout << "Color transfer task enqueued.\n";
                 break;
             }
-            case 3:
+            case 3: 
+            {
+                std::cout << "Enter path for image: ";
+                std::string stylePath;
+                std::cin >> stylePath;
+                cv::Mat input  = cv::imread(stylePath);
+
+                if (input.empty()) {
+                    std::cout << "Error loading image.\n";
+                    break;
+                }
+
+                pool.enqueue([input, taskId = taskCount++] {
+                    qrcode_finder::QRCodeFinder finder;
+                    std::string result = finder.detectAndDecode(input);
+                    cv::Mat output = finder.drawResult();
+                    std::string windowName = "QR Code Result " + std::to_string(taskId);
+
+                    enqueueGuiTask([output, result, windowName]() {
+                        if (!result.empty()) {
+                            std::cout << "Detected QR Code: " << result << std::endl;
+                        } else {
+                            std::cout << "No QR Code found." << std::endl;
+                        }
+                        imshow(windowName, output);
+                        {
+                            std::lock_guard<std::mutex> lock(openWindowsMutex);
+                            openWindows.insert(windowName);
+                        }
+                        std::cout << windowName << " displayed. Press any key on that window to close it.\n";
+                    });
+                });
+
+                std::cout << "QR Code detection task enqueued.\n";
+                break;
+            }
+            case 4:
                 cout << "Other processing is not implemented yet.\n";
                 break;
             default:
